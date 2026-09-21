@@ -70,10 +70,18 @@ class DiaNoGame:
         
 
 class Mapa:
-    def __init__(self):
-        self.chao = 500 
+    def __init__(self, largura, altura):
+        self.largura = largura
+        self.altura = altura 
+        self.chao = pygame.Rect(
+            0,
+            500,
+            largura,
+            100
+        )
 
-
+class Inimigo:
+    pass
 
 class Player:
     def __init__(self, type_animal , nome_falado, img, estado, y=0, x=0):
@@ -85,13 +93,20 @@ class Player:
         self.x = x
         self.velocidade_y = 0
         self.gravidade = 900
+        self.altura_player = 80
         self.y_chao = 500 #deve vir do mapa talvez nao precise disto assim
         self.no_chao = True
+        self.pulando = False
+
+    @property
+    def rect(self):
+        return pygame.Rect(self.x, self.y, 50, 80)
 
     def pular(self):
         if self.no_chao:
             self.velocidade_y = -500
             self.no_chao = False
+            print(self.y)
 
     def mover_direita(self):
         self.x += 5
@@ -106,8 +121,15 @@ class Player:
         pass
 
     def update_pet(self, dt):
-        self.velocidade_y += self.gravidade * dt # 0 = 900 * 0.016 = 
-        self.y += self.velocidade_y * dt
+        if not self.no_chao:
+            self.velocidade_y += self.gravidade * dt # 0 = 900 * 0.016 = 
+            self.y += self.velocidade_y * dt
+
+        #if self.y + self.altura_player >= self.y_chao:
+            #self.y = self.y_chao - self.altura_player
+            #self.no_chao = True
+        
+        print(self.y)
 
     @property
     def esta_vivo(self):
@@ -120,15 +142,16 @@ class Player:
 
 
 class Game:
-    def __init__(self, pet, inventario, tempo_game):
+    def __init__(self, pet, inventario, tempo_game, mapa):
         pygame.init()
         pygame.display.set_caption("game")
         self.pet = pet
         self.inventario = inventario
         self.tempo_game = tempo_game
-        self.larguura = 800
+        self.mapa = mapa
+        self.largura = 800
         self.altura = 600
-        self.tela = pygame.display.set_mode((self.larguura, self.altura))
+        self.tela = pygame.display.set_mode((self.largura, self.altura))
         self.clock = pygame.time.Clock()
         self.fonte = pygame.font.Font(None, 32)
         self.rodando = True
@@ -153,13 +176,26 @@ class Game:
 
     #mover para uma class Renderizar
     def desenhar_chao(self):
-        pygame.draw.rect(self.tela, "green", (0, 500, 800, 80))
+        pygame.draw.rect(self.tela, "green", (0, 500, 800, 40))
 
-    
+
+    def verificar_colisao(self):
+        player_rect = self.pet.rect
+
+        if player_rect.colliderect(self.mapa.chao):
+            player_rect.bottom = self.mapa.chao.top
+
+            self.y = player_rect.y 
+            self.pet.velocidade_y = 0 
+            self.pet.no_chao = True
+
+
+
 
        
     def atualizar_game(self, dt):
            self.pet.update_pet(dt)
+           self.verificar_colisao()
           
            teclas = pygame.key.get_pressed()
 
@@ -211,9 +247,10 @@ def main():
 
         nome_pet = "mingau"
         estado = Estado()
+        mapa = Mapa(800, 600)
         pet = Player('cat', nome_pet, 'cat.png',estado )
         dia = DiaNoGame()
-        game = Game(pet, inventario_instace, dia)
+        game = Game(pet, inventario_instace, dia, mapa)
 
             
 
